@@ -1,29 +1,42 @@
 <?php
 
-if (isset($_POST['submit'])) {
+require "common.php";
+
+if (isset($_GET["id"])) {
     try {
-        require "common.php";
         require_once '../src/DBconnect.php';
 
-        $sql = "SELECT * FROM users WHERE location = :location";
-        $location = $_POST['location'];
+        $id = $_GET["id"];
+
+        $sql = "DELETE FROM users WHERE id = :id";
 
         $statement = $connection->prepare($sql);
-        $statement->bindParam(':location', $location, PDO::PARAM_STR);
+        $statement->bindValue(':id', $id);
         $statement->execute();
-        $result = $statement->fetchAll();
-    } catch(PDOException $error) {
+
+        $success = "User " . $id . " successfully deleted";
+    } catch (PDOException $error) {
         echo $sql . "<br>" . $error->getMessage();
     }
 }
 
-require "templates/header.php";
-
-if (isset($_POST['submit'])) {
-    if ($result && $statement->rowCount() > 0) {
+try {
+    require_once '../src/DBconnect.php';
+    $sql = "SELECT * FROM users";
+    $statement = $connection->prepare($sql);
+    $statement->execute();
+    $result = $statement->fetchAll();
+} catch (PDOException $error) {
+    echo $sql . "<br>" . $error->getMessage();
+}
 ?>
 
-<h2>Results</h2>
+<?php require "templates/header.php"; ?>
+
+<h2>Delete users</h2>
+
+<?php if ($success) echo $success; ?>
+
 <table>
     <thead>
         <tr>
@@ -34,10 +47,11 @@ if (isset($_POST['submit'])) {
             <th>Age</th>
             <th>Location</th>
             <th>Date</th>
+            <th>Delete</th>
         </tr>
     </thead>
     <tbody>
-        <?php foreach ($result as $row) { ?>
+        <?php foreach ($result as $row) : ?>
             <tr>
                 <td><?php echo escape($row["id"]); ?></td>
                 <td><?php echo escape($row["firstname"]); ?></td>
@@ -46,26 +60,11 @@ if (isset($_POST['submit'])) {
                 <td><?php echo escape($row["age"]); ?></td>
                 <td><?php echo escape($row["location"]); ?></td>
                 <td><?php echo escape($row["date"]); ?></td>
+                <td><a href="delete.php?id=<?php echo escape($row["id"]); ?>">Delete</a></td>
             </tr>
-        <?php } ?>
+        <?php endforeach; ?>
     </tbody>
 </table>
-
-<?php 
-    } else { 
-?>
-        <p>No results found for <?php echo escape($_POST['location']); ?>.</p>
-<?php 
-    }
-} ?>
-
-<h2>Find user based on location</h2>
-
-<form method="post">
-    <label for="location">Location</label>
-    <input type="text" id="location" name="location">
-    <input type="submit" name="submit" value="View Results">
-</form>
 
 <a href="index.php">Back to home</a>
 
